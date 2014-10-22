@@ -1,6 +1,8 @@
 # Mongery
 
-Mongery helps you to migrate off of MongoDB object storage to PostgreSQL with JSON column by translating Mongo query into Arel object, ready to use with ActiveRecord connection.
+Mongery translates MongoDB query to Arel AST for Postgres with JSON columns, ready to use with ActiveRecord connection.
+
+This could be useful in situations where you migrate off of MongoDB backend to Postgres without touching the application code, or to provide MongoDB query syntax as a JSON API to your Postgres backend.
 
 ## Limitation
 
