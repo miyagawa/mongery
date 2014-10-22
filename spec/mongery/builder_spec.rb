@@ -24,6 +24,8 @@ describe Mongery::Builder do
       /WHERE data->>'name' = ''$/ ],
     [ { name: "foo", other: "bar" }, { },
       /WHERE data->>'name' = 'foo' AND data->>'other' = 'bar'/ ],
+    [ { "x'y" => "foo" }, { },
+      /WHERE data->>'x''y' = 'foo'/ ],
     [ { weight: 66 }, { },
       /WHERE data->>'weight' = '66'$/ ],
     [ { weight: { "$gt" => 66 } }, { },

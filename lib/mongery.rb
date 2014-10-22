@@ -65,6 +65,8 @@ module Mongery
       self
     end
 
+    private
+
     def translate(query)
       chain(:and, query.map { |col, value| translate_cv(col, value) })
     end
@@ -158,9 +160,14 @@ module Mongery
       parts = col.to_s.split('.')
       parts.each_with_index do |part, index|
         sep = index == parts.size - 1 ? "->>" : "->"
-        path += "#{sep}'#{part}'"
+        path += sep + quote(part)
       end
       Arel.sql(path)
+    end
+
+    def quote(str)
+      # FIXME there should be a better way to do this
+      table.engine.connection.quote(str)
     end
 
     def chain(op, conditions)
