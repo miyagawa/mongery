@@ -4,7 +4,7 @@ Mongery helps you to migrate off of MongoDB object storage to PostgreSQL with JS
 
 ## Limitation
 
-MOngery currently supports the limited set of queries to use with PostgreSQL 9.3. Most query on JSON data will end up with the full table scan. Index using hstore columns and/or 9.4 `jsonb` types are planned but not implemented.
+Currently, Mongery supports the limited set of queries to use with PostgreSQL 9.3. Most query on JSON data will end up with the full table scan. Index using hstore columns and/or 9.4 `jsonb` types are planned but not implemented.
 
 See the spec file in `spec` directory for the supported conversion.
 
