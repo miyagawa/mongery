@@ -34,6 +34,11 @@ builder.find({ age: {"$gte" => 21 } }).sort({ name: -1 }).to_sql
 # => SELECT data FROM objects WHERE (data->>'age')::integer >= 21 ORDER BY data->>'name' DESC
 ```
 
+## See Also
+
+* [mosql](https://github.com/stripe/mosql)
+* [mongres](https://github.com/umitanuki/mongres)
+
 ## License
 
 MIT
