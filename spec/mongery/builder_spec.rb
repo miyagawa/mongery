@@ -60,10 +60,12 @@ describe Mongery::Builder do
       /WHERE \(data->>'ids' ILIKE '%"foo"%' OR data->>'ids' ILIKE '%"bar"%'\)$/ ],
   ]
 
+  builder = Mongery::Builder.new(:test)
+
   tests.each do |query, condition, sql|
     context "with query #{query}" do
       subject do
-        Mongery::Builder.new(:test).find(query).tap { |q|
+        builder.find(query).tap { |q|
           condition.each do |method, value|
             q.send(method, value)
           end
