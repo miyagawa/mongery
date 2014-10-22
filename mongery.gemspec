@@ -10,7 +10,7 @@ Gem::Specification.new do |spec|
   spec.email         = ["miyagawa@bulknews.net"]
   spec.summary       = %q{Convert MongoDB query to Arel for PostgreSQL + JSON}
   spec.description   = %q{}
-  spec.homepage      = ""
+  spec.homepage      = "https://github.com/miyagawa/mongery"
   spec.license       = "MIT"
 
   spec.files         = `git ls-files -z`.split("\x0")
