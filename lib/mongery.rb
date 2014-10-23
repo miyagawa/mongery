@@ -12,8 +12,12 @@ module Mongery
       @table = Arel::Table.new(model, engine)
     end
 
-    def find(args)
-       Query.new(table).where(args)
+    def find(*args)
+      Query.new(table).where(*args)
+    end
+
+    def insert(*args)
+      Query.new(table).insert(*args)
     end
   end
 
@@ -22,16 +26,16 @@ module Mongery
 
     def initialize(table)
       @table = table
+      @condition = nil
     end
 
     def where(args)
-      condition = translate(args)
-      arel.where(condition) if condition
+      @where = args
       self
     end
 
     def arel
-      @arel ||= table.project(table[:data])
+      @arel ||= build_arel
     end
 
     def to_arel
@@ -65,7 +69,39 @@ module Mongery
       self
     end
 
+    def insert(args)
+      Arel::InsertManager.new(table.engine).tap do |manager|
+        manager.into(table)
+        manager.insert([[table[:id], args[:_id]], [table[:data], args.to_json]])
+      end
+    end
+
+    def update(args)
+      Arel::UpdateManager.new(table.engine).tap do |manager|
+        manager.table(table)
+        manager.set([[table[:data], args.to_json]])
+        manager.where(condition) if condition
+      end
+    end
+
+    def delete
+      Arel::DeleteManager.new(table.engine).tap do |manager|
+        manager.from(table)
+        manager.where(condition) if condition
+      end
+    end
+
     private
+
+    def condition
+      @condition ||= translate(@where)
+    end
+
+    def build_arel
+      table.project(table[:data]).tap do |t|
+        t.where(condition) if condition
+      end
+    end
 
     def translate(query)
       chain(:and, query.map { |col, value| translate_cv(col, value) })
