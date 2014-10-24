@@ -24,8 +24,6 @@ CREATE TABLE objects (
 
 Currently Mongery assumes the `id` values are stored as `_id` key duplicated in the json data as well. This can be customized in the future updates.
 
-### Selects
-
 ```ruby
 builder = Mongery::Builder.new(:objects)
 
@@ -34,12 +32,6 @@ builder.find({ _id: 'abcd' }).limit(1).to_sql
 
 builder.find({ age: {"$gte" => 21 } }).sort({ name: -1 }).to_sql
 # => SELECT data FROM objects WHERE (data->>'age')::integer >= 21 ORDER BY data->>'name' DESC
-```
-
-### Inserts, Updates and Deletes
-
-```ruby
-builder = Mongery::Builder.new(:objects)
 
 builder.insert({ _id: 'foobar' }).to_sql
 # => INSERT INTO "objects" ("id", "data") VALUES ('foobar', '{"_id":"foobar"}')
@@ -49,6 +41,7 @@ builder.find({ age: {"$gte" => 21 } }).update({ name: "John" }).to_sql
 
 builder.find({ age: {"$eq" => 55 } }).delete.to_sql
 # => DELETE FROM "objects" WHERE (data->>'age')::integer = 21
+```
 
 ## See Also
 
