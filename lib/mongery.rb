@@ -190,13 +190,16 @@ module Mongery
     end
 
     def sql_json_path(col)
-      path = "data"
-      parts = col.to_s.split('.')
-      parts.each_with_index do |part, index|
-        sep = index == parts.size - 1 ? "->>" : "->"
-        path += sep + quote(part)
+      paths = col.to_s.split('.')
+      if paths.size > 1
+        Arel.sql("data#>>#{json_pathize(paths)}")
+      else
+        Arel.sql("data->>#{quote(paths.first)}")
       end
-      Arel.sql(path)
+    end
+
+    def json_pathize(paths)
+      quote("{#{paths.join(',')}}")
     end
 
     def quote(str)
