@@ -2,8 +2,6 @@ require "mongery/version"
 require "arel"
 
 module Mongery
-  # Translate Mongo query to Arel AST
-
   class Builder
     attr_reader :model, :table
 
