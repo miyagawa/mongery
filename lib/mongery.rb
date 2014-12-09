@@ -102,7 +102,7 @@ module Mongery
     end
 
     def translate(query)
-      chain(:and, query.map { |col, value| translate_cv(col, value) })
+      chain(:and, query.map {|col, value| translate_cv(col, value) })
     end
 
     def translate_cv(col, value)
@@ -112,7 +112,7 @@ module Mongery
       when "$or"
         chain(:or, value.map {|q| translate(q) })
       when "$and"
-        chain(:and, value.map { |q| translate(q) })
+        chain(:and, value.map {|q| translate(q) })
       when /^\$/
         raise UnsupportedQuery, "Unsupported operator #{col}"
       else
@@ -165,7 +165,7 @@ module Mongery
         val = value[ops.first]
         case ops.first
         when "$in"
-          chain(:or, val.map { |val| col.matches(%Q[%"#{val}"%]) })
+          chain(:or, val.map {|val| col.matches(%Q[%"#{val}"%]) })
         when "$gt", "$gte", "$lt", "$lte"
           wrap_numeric(col, val).send(COMPARE_MAPS[ops.first], val)
         when "$eq"
