@@ -120,7 +120,7 @@ module Mongery
       end
     end
 
-    def translate_value(col, value, json = false)
+    def translate_value(col, value)
       case value
       when Hash
         ops = value.keys
@@ -148,7 +148,7 @@ module Mongery
 
     COMPARE_MAPS = { "$gt" => :gt, "$gte" => :gteq, "$lt" => :lt, "$lte" => :lteq }
 
-    def translate_value_json(col, value, json = false)
+    def translate_value_json(col, value)
       case value
       when String, Numeric, TrueClass, FalseClass
         # in Postgres 9.3, you can't compare numeric
