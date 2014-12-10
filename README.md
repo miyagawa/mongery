@@ -46,6 +46,32 @@ builder.find({ age: {"$eq" => 55 } }).delete.to_sql
 # => DELETE FROM "objects" WHERE (data#>>'{age}')::integer = 21
 ```
 
+### Type Casting
+
+By default, types are dynamically casted depending on the query values.
+
+```ruby
+builder.find({ age: {"$eq" => 55 } }).to_sql
+# => SELECT FROM "objects" WHERE (data#>>'{age}')::integer = 21
+```
+
+Mongery has an **experimental support** for JSON Schema. You can pass JsonSchema::Schema object created with [json_schema gem](https://github.com/brandur/json_schema) to the Mongery::Builder constructor, to make it cast the query type based on the schema rather than the bound value.
+
+```ruby
+schema_data = {
+  "type" => "object",
+  "properties" => {
+    "name" => {
+      "type" => "string"
+    },
+  },
+}
+schema = JsonSchema.parse!(schema_data)
+
+builder = Mongery::Builder.new(:objects, ActiveRecord::Base, schema)
+```
+
+
 ## See Also
 
 * [mosql](https://github.com/stripe/mosql)

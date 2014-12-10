@@ -5,8 +5,7 @@
 - More accurate comparison with nil or numeric values
 - operators such as $lt, $gt can be used at the same time to chain them with AND
 - Supports partial JSON value match when you don't use $- operators
-- Add a `$contains` operator to simulate `$in` in Mongo against array fields.
-  Like `$in` in older version, it only works when the values are strings.
+- Supports casting JSON value based on JSON Schema rather than based on the bound values.
 
 ## 0.0.5 (2014/11/10)
 - Use JSON path expression for nested data to avoid errors like "cannot extract element from a scalar"
