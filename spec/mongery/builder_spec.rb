@@ -66,6 +66,8 @@ describe Mongery::Builder do
       /WHERE data#>>'{bar}' IN \('foo', 'bar'\)$/ ],
     [ { bar: {"$in" => [ "foo", 1.2 ]} }, { },
       /WHERE data#>>'{bar}' IN \('foo', '1\.2'\)$/ ],
+    [ { bar: { foo: "bar", baz: [1,2,3]} }, { },
+      /WHERE data#>>'{bar}' = '{"foo":"bar","baz":\[1,2,3\]}'$/ ],
   ]
 
   builder = Mongery::Builder.new(:test)

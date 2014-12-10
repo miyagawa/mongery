@@ -107,46 +107,42 @@ module Mongery
 
     def translate_cv(col, value)
       case col.to_s
-      when "_id"
-        translate_value(table[:id], value)
       when "$or"
         chain(:or, value.map {|q| translate(q) })
       when "$and"
         chain(:and, value.map {|q| translate(q) })
       when /^\$/
         raise UnsupportedQuery, "Unsupported operator #{col}"
+      when "_id"
+        translate_value(table[:id], value)
       else
         translate_value_json(sql_json_path(col), value)
       end
     end
 
+    OPERATOR_MAP = {
+      "$in" => :in, "$eq" => :eq, "$ne" => :not_eq,
+      "$gt" => :gt, "$gte" => :gteq, "$lt" => :lt, "$lte" => :lteq,
+    }
+
     def translate_value(col, value)
       case value
       when Hash
-        ops = value.keys
-        if ops.size > 1
-          raise UnsupportedQuery, "Multiple operators are not supported: #{ops.join(", ")}"
-        end
-
-        val = value[ops.first]
-        case ops.first
-        when "$in"
-          col.in(val)
-        when "$gt", "$gte", "$lt", "$lte"
-          col.send(COMPARE_MAPS[ops.first], val)
-        when "$eq"
-          col.eq(val)
-        when "$ne"
-          col.not_eq(val)
-        when /^\$/
-          raise UnsupportedQuery, "Unknown operator #{ops.first}"
+        if has_operator?(value)
+          chain(:and, value.map {|op, val|
+                  if OPERATOR_MAP.key?(op)
+                    col.send(OPERATOR_MAP[op], val)
+                  else
+                    raise UnsupportedQuery, "Unknown operator #{op}"
+                  end
+                })
+        else
+          col.eq(value.to_json)
         end
       else
         col.eq(value)
       end
     end
-
-    COMPARE_MAPS = { "$gt" => :gt, "$gte" => :gteq, "$lt" => :lt, "$lte" => :lteq }
 
     def translate_value_json(col, value)
       case value
@@ -155,29 +151,31 @@ module Mongery
       when Numeric, NilClass
         compare(col, value, :eq)
       when Hash
-        ops = value.keys
-        if ops.size > 1
-          raise UnsupportedQuery, "Multiple operators are not supported: #{ops.join(", ")}"
+        if has_operator?(value)
+          chain(:and, value.map {|op, val|
+                  case op
+                  when "$in"
+                    if val.all? {|v| v.is_a? Numeric }
+                      wrap(col, val.first).in(val)
+                    else
+                      col.in(val.map(&:to_s))
+                    end
+                  when "$eq", "$ne", "$gt", "$gte", "$lt", "$lte"
+                    compare(col, val, OPERATOR_MAP[op])
+                  when /^\$/
+                    raise UnsupportedQuery, "Unknown operator #{op}"
+                  end
+                })
+        else
+          col.eq(value.to_json)
         end
-
-        val = value[ops.first]
-        case ops.first
-        when "$in"
-          if val.all? {|v| v.is_a? Numeric }
-            wrap(col, val.first).in(val)
-          else
-            col.in(val.map(&:to_s))
-          end
-        when "$gt", "$gte", "$lt", "$lte"
-          compare(col, val, COMPARE_MAPS[ops.first])
-        when "$eq"
-          compare(col, val, :eq)
-        when "$ne"
-          compare(col, val, :not_eq)
-        when /^\$/
-          raise UnsupportedQuery, "Unknown operator #{ops.first}"
-        end
+      else
+        col.eq(value.to_json)
       end
+    end
+
+    def has_operator?(value)
+      value.keys.any? {|key| key =~ /^\$/ }
     end
 
     def compare(col, val, op)
