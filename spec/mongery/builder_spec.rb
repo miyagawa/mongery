@@ -68,6 +68,8 @@ describe Mongery::Builder do
       /WHERE data#>>'{bar}' IN \('foo', '1\.2'\)$/ ],
     [ { bar: { foo: "bar", baz: [1,2,3]} }, { },
       /WHERE data#>>'{bar}' = '{"foo":"bar","baz":\[1,2,3\]}'$/ ],
+    [ { "foo.bar" => true }, { },
+      /WHERE data#>>'{foo,bar}' = 'true'$/ ],
   ]
 
   bad_queries = [

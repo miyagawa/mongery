@@ -15,6 +15,8 @@ describe Mongery::Builder do
       /WHERE \(data#>>'{age}'\)::numeric != 10/ ],
     [ { tag: {"$in" => [ "food", "recipe" ]} },
       /WHERE \(data#>>'{tag}' ILIKE '%"food"%' OR data#>>'{tag}' ILIKE '%"recipe"%'\)$/ ],
+    [ { active: true },
+      /WHERE data#>>'{active}' = 'true'$/ ],
   ]
 
   schema = JsonSchema.parse!(JSON.parse(<<-EOF))
@@ -32,6 +34,9 @@ describe Mongery::Builder do
     },
     "tag":{
      "type": "array"
+    },
+    "active":{
+     "type": "boolean"
     }
    }
   }

@@ -204,10 +204,10 @@ module Mongery
         else
           col.eq(value.to_json)
         end
-      when String, TrueClass, FalseClass, Numeric, NilClass
+      when String, Numeric, NilClass
         compare_schema(col, value, type, :eq)
       else
-        col.eq(value.to_json)
+        compare_schema(col, value.to_json, type, :eq)
       end
     end
 
