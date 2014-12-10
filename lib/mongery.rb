@@ -191,11 +191,7 @@ module Mongery
 
     def sql_json_path(col)
       paths = col.to_s.split('.')
-      if paths.size > 1
-        Arel.sql("data#>>#{json_pathize(paths)}")
-      else
-        Arel.sql("data->>#{quote(paths.first)}")
-      end
+      Arel.sql("data#>>#{json_pathize(paths)}")
     end
 
     def json_pathize(paths)
