@@ -151,11 +151,9 @@ module Mongery
     def translate_value_json(col, value)
       case value
       when String, TrueClass, FalseClass
-        col.eq(value.to_s)
-      when Numeric
-        wrap_numeric(col).eq(value)
-      when NilClass
-        wrap_nil(col).eq(nil)
+        compare(col, value.to_s, :eq)
+      when Numeric, NilClass
+        compare(col, value, :eq)
       when Hash
         ops = value.keys
         if ops.size > 1
@@ -165,27 +163,38 @@ module Mongery
         val = value[ops.first]
         case ops.first
         when "$in"
-          chain(:or, val.map {|val| col.matches(%Q[%"#{val}"%]) })
+          if val.all? {|v| v.is_a? Numeric }
+            wrap(col, val.first).in(val)
+          else
+            col.in(val.map(&:to_s))
+          end
         when "$gt", "$gte", "$lt", "$lte"
-          wrap_numeric(col).send(COMPARE_MAPS[ops.first], val)
+          compare(col, val, COMPARE_MAPS[ops.first])
         when "$eq"
-          wrap_numeric(col).eq(val)
+          compare(col, val, :eq)
         when "$ne"
-          wrap_numeric(col).not_eq(val)
+          compare(col, val, :not_eq)
         when /^\$/
           raise UnsupportedQuery, "Unknown operator #{ops.first}"
         end
       end
     end
 
-    def wrap_nil(col)
-      # data#>>'{foo}' IS NULL    is invalid
-      # (data#>>'{foo}') IS NULL  is valid
-      Arel.sql("(#{col})")
+    def compare(col, val, op)
+      wrap(col, val).send(op, val)
     end
 
-    def wrap_numeric(col)
-      Arel.sql("(#{col})::numeric")
+    def wrap(col, val)
+      case val
+      when NilClass
+        # data#>>'{foo}' IS NULL    is invalid
+        # (data#>>'{foo}') IS NULL  is valid
+        Arel.sql("(#{col})")
+      when Numeric
+        Arel.sql("(#{col})::numeric")
+      else
+        col
+      end
     end
 
     def sql_json_path(col)

@@ -58,10 +58,14 @@ describe Mongery::Builder do
       /WHERE data#>>'{name}' = 'John' AND \(data#>>'{weight}'\)::numeric = 120$/ ],
     [ { "$and" => [{ "$or" => [{name: "John"}, {email: "john"}] }, {_id: "Bob"}] }, { },
       /WHERE \(data#>>'{name}' = 'John' OR data#>>'{email}' = 'john'\) AND "test"\."id" = 'Bob'$/ ],
-    [ { ids: {"$in" => [ "foo" ]} }, { },
-      /WHERE data#>>'{ids}' ILIKE '%"foo"%'$/ ],
-    [ { ids: {"$in" => [ "foo", "bar" ]} }, { },
-      /WHERE \(data#>>'{ids}' ILIKE '%"foo"%' OR data#>>'{ids}' ILIKE '%"bar"%'\)$/ ],
+    [ { bar: {"$in" => [ "foo" ]} }, { },
+      /WHERE data#>>'{bar}' IN \('foo'\)$/ ],
+    [ { tag: {"$in" => [ 1, 2 ]} }, { },
+      /WHERE \(data#>>'{tag}'\)::numeric IN \(1, 2\)$/ ],
+    [ { bar: {"$in" => [ "foo", "bar" ]} }, { },
+      /WHERE data#>>'{bar}' IN \('foo', 'bar'\)$/ ],
+    [ { bar: {"$in" => [ "foo", 1.2 ]} }, { },
+      /WHERE data#>>'{bar}' IN \('foo', '1\.2'\)$/ ],
   ]
 
   builder = Mongery::Builder.new(:test)
