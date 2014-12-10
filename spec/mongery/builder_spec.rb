@@ -1,7 +1,7 @@
 require 'spec_helper'
 
 describe Mongery::Builder do
-  tests = [
+  queries = [
     [ { }, { },
       /^SELECT "test"\."data" FROM "test"$/ ],
     [ { _id: "foo" }, { },
@@ -70,9 +70,16 @@ describe Mongery::Builder do
       /WHERE data#>>'{bar}' = '{"foo":"bar","baz":\[1,2,3\]}'$/ ],
   ]
 
+  bad_queries = [
+    { "$bar" => "foo" },
+    { "_id" => { "$bar" => 1 } },
+    { "foo" => { "$bar" => 1 } },
+    { "foo" => { "$lt" => 1, "gt" => 2 } },
+  ]
+
   builder = Mongery::Builder.new(:test)
 
-  tests.each do |query, condition, sql|
+  queries.each do |query, condition, sql|
     context "with query #{query}" do
       subject do
         builder.find(query).tap { |q|
@@ -82,6 +89,15 @@ describe Mongery::Builder do
         }.to_sql
       end
       it { should match sql }
+    end
+  end
+
+  bad_queries.each do |query|
+    context "with query #{query}" do
+      it "should throw UnsupportedQuery exception" do
+        expect { builder.find(query).to_sql }
+          .to raise_error(Mongery::UnsupportedQuery)
+      end
     end
   end
 end

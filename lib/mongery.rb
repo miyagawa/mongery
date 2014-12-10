@@ -162,7 +162,7 @@ module Mongery
                     end
                   when "$eq", "$ne", "$gt", "$gte", "$lt", "$lte"
                     compare(col, val, OPERATOR_MAP[op])
-                  when /^\$/
+                  else
                     raise UnsupportedQuery, "Unknown operator #{op}"
                   end
                 })
