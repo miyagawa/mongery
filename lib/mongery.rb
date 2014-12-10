@@ -1,29 +1,32 @@
 require "mongery/version"
+require "mongery/schema"
 require "arel"
 
 module Mongery
   class Builder
-    attr_reader :model, :table
+    attr_reader :model, :table, :schema
 
-    def initialize(model, engine = ActiveRecord::Base)
+    def initialize(model, engine = ActiveRecord::Base, schema = nil)
       @model = model
       @table = Arel::Table.new(model, engine)
+      @schema = Schema.new(schema) if schema
     end
 
     def find(*args)
-      Query.new(table).where(*args)
+      Query.new(table, schema).where(*args)
     end
 
     def insert(*args)
-      Query.new(table).insert(*args)
+      Query.new(table, schema).insert(*args)
     end
   end
 
   class Query
-    attr_reader :table
+    attr_reader :table, :schema
 
-    def initialize(table)
+    def initialize(table, schema)
       @table = table
+      @schema = schema
       @condition = nil
     end
 
@@ -116,7 +119,11 @@ module Mongery
       when "_id"
         translate_value(table[:id], value)
       else
-        translate_value_json(sql_json_path(col), value)
+        if schema
+          translate_value_schema(col, sql_json_path(col), value)
+        else
+          translate_value_dynamic(sql_json_path(col), value)
+        end
       end
     end
 
@@ -144,7 +151,7 @@ module Mongery
       end
     end
 
-    def translate_value_json(col, value)
+    def translate_value_dynamic(col, value)
       case value
       when String, TrueClass, FalseClass
         compare(col, value.to_s, :eq)
@@ -154,8 +161,66 @@ module Mongery
         if has_operator?(value)
           chain(:and, value.map {|op, val|
                   case op
-                  when "$contains"
-                    chain(:or, val.map {|v| col.matches(%Q[%"#{v}"%]) })
+                  when "$in"
+                    if val.all? {|v| v.is_a? Numeric }
+                      wrap(col, val.first).in(val)
+                    else
+                      col.in(val.map(&:to_s))
+                    end
+                  when "$eq", "$ne", "$gt", "$gte", "$lt", "$lte"
+                    compare(col, val, OPERATOR_MAP[op])
+                  else
+                    raise UnsupportedQuery, "Unknown operator #{op}"
+                  end
+                })
+        else
+          col.eq(value.to_json)
+        end
+      else
+        col.eq(value.to_json)
+      end
+    end
+
+    def translate_value_schema(column, col, value)
+      type = schema.column_type(column.to_s)
+      case value
+      when Hash
+        if has_operator?(value)
+          chain(:and, value.map {|op, val|
+                  case op
+                  when "$in"
+                    case type
+                    when "array"
+                      chain(:or, val.map { |v| col.matches(%Q[%"#{v}"%]) })
+                    else
+                      compare_schema(col, val, type, :in)
+                    end
+                  when "$eq", "$ne", "$gt", "$gte", "$lt", "$lte"
+                     compare_schema(col, val, type, OPERATOR_MAP[op])
+                  else
+                    raise UnsupportedQuery, "Unknown operator #{op}"
+                  end
+                })
+        else
+          col.eq(value.to_json)
+        end
+      when String, TrueClass, FalseClass, Numeric, NilClass
+        compare_schema(col, value, type, :eq)
+      else
+        col.eq(value.to_json)
+      end
+    end
+
+    def translate_value_dynamic(col, value)
+      case value
+      when String, TrueClass, FalseClass
+        col.eq(value.to_s)
+      when Numeric, NilClass
+        compare(col, value, :eq)
+      when Hash
+        if has_operator?(value)
+          chain(:and, value.map {|op, val|
+                  case op
                   when "$in"
                     if val.all? {|v| v.is_a? Numeric }
                       wrap(col, val.first).in(val)
@@ -191,6 +256,21 @@ module Mongery
         # (data#>>'{foo}') IS NULL  is valid
         Arel.sql("(#{col})")
       when Numeric
+        Arel.sql("(#{col})::numeric")
+      else
+        col
+      end
+    end
+
+    def compare_schema(col, val, type, op)
+      wrap_schema(col, type).send(op, val)
+    end
+
+    def wrap_schema(col, type)
+      case type
+      when "string"
+        Arel.sql("(#{col})")
+      when "number", "integer"
         Arel.sql("(#{col})::numeric")
       else
         col

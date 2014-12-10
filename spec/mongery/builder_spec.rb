@@ -68,8 +68,6 @@ describe Mongery::Builder do
       /WHERE data#>>'{bar}' IN \('foo', '1\.2'\)$/ ],
     [ { bar: { foo: "bar", baz: [1,2,3]} }, { },
       /WHERE data#>>'{bar}' = '{"foo":"bar","baz":\[1,2,3\]}'$/ ],
-    [ { tags: {"$contains" => [ "food", "recipe" ]} }, { },
-      /WHERE \(data#>>'{tags}' ILIKE '%"food"%' OR data#>>'{tags}' ILIKE '%"recipe"%'\)$/ ],
   ]
 
   bad_queries = [
