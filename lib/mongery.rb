@@ -125,7 +125,7 @@ module Mongery
       when Hash
         ops = value.keys
         if ops.size > 1
-          raise UnsupportedQuery, "Multiple operator supported: #{ops.join(", ")}"
+          raise UnsupportedQuery, "Multiple operators are not supported: #{ops.join(", ")}"
         end
 
         val = value[ops.first]
@@ -159,7 +159,7 @@ module Mongery
       when Hash
         ops = value.keys
         if ops.size > 1
-          raise UnsupportedQuery, "Multiple operator supported: #{ops.join(", ")}"
+          raise UnsupportedQuery, "Multiple operators are not supported: #{ops.join(", ")}"
         end
 
         val = value[ops.first]
