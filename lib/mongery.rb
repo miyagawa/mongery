@@ -150,9 +150,10 @@ module Mongery
 
     def translate_value_json(col, value)
       case value
-      when String, Numeric, TrueClass, FalseClass
-        # in Postgres 9.3, you can't compare numeric
+      when String, TrueClass, FalseClass
         col.eq(value.to_s)
+      when Numeric
+        wrap_numeric(col).eq(value)
       when NilClass
         # You can't use IS NULL
         wrap_nil(col).eq(nil)
@@ -167,11 +168,11 @@ module Mongery
         when "$in"
           chain(:or, val.map {|val| col.matches(%Q[%"#{val}"%]) })
         when "$gt", "$gte", "$lt", "$lte"
-          wrap_numeric(col, val).send(COMPARE_MAPS[ops.first], val)
+          wrap_numeric(col).send(COMPARE_MAPS[ops.first], val)
         when "$eq"
-          wrap_numeric(col, val).eq(val)
+          wrap_numeric(col).eq(val)
         when "$ne"
-          wrap_numeric(col, val).not_eq(val)
+          wrap_numeric(col).not_eq(val)
         when /^\$/
           raise UnsupportedQuery, "Unknown operator #{ops.first}"
         end
@@ -184,15 +185,8 @@ module Mongery
       Arel.sql("(#{col})")
     end
 
-    def wrap_numeric(col, val)
-      case val
-      when Float
-        Arel.sql("(#{col})::float")
-      when Integer
-        Arel.sql("(#{col})::integer")
-      else
-        col
-      end
+    def wrap_numeric(col)
+      Arel.sql("(#{col})::numeric")
     end
 
     def sql_json_path(col)
