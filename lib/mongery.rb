@@ -155,7 +155,6 @@ module Mongery
       when Numeric
         wrap_numeric(col).eq(value)
       when NilClass
-        # You can't use IS NULL
         wrap_nil(col).eq(nil)
       when Hash
         ops = value.keys
