@@ -155,7 +155,7 @@ module Mongery
         col.eq(value.to_s)
       when NilClass
         # You can't use IS NULL
-        col.eq('')
+        wrap_nil(col).eq(nil)
       when Hash
         ops = value.keys
         if ops.size > 1
@@ -176,6 +176,12 @@ module Mongery
           raise UnsupportedQuery, "Unknown operator #{ops.first}"
         end
       end
+    end
+
+    def wrap_nil(col)
+      # data#>>'{foo}' IS NULL    is invalid
+      # (data#>>'{foo}') IS NULL  is valid
+      Arel.sql("(#{col})")
     end
 
     def wrap_numeric(col, val)
