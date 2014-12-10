@@ -154,6 +154,8 @@ module Mongery
         if has_operator?(value)
           chain(:and, value.map {|op, val|
                   case op
+                  when "$contains"
+                    chain(:or, val.map {|val| col.matches(%Q[%"#{val}"%]) })
                   when "$in"
                     if val.all? {|v| v.is_a? Numeric }
                       wrap(col, val.first).in(val)
