@@ -6,7 +6,7 @@ This could be useful in situations where you migrate off of MongoDB backend to P
 
 ## Limitation
 
-Currently, Mongery supports the limited set of queries to use with PostgreSQL 9.3. Most query on JSON data will end up with the full table scan. Index using hstore columns and/or 9.4 `jsonb` types are planned but not implemented.
+Currently, Mongery supports the limited set of queries to use with PostgreSQL 9.3. Most query on JSON data will end up with the full table scan, unless you manually create expression index for the JSON path you want to query on.
 
 See the spec file in `spec` directory for the supported conversion.
 
@@ -31,16 +31,19 @@ builder.find({ _id: 'abcd' }).limit(1).to_sql
 # => SELECT data FROM objects WHERE id = 'abcd' LIMIT 1
 
 builder.find({ age: {"$gte" => 21 } }).sort({ name: -1 }).to_sql
-# => SELECT data FROM objects WHERE (data->>'age')::integer >= 21 ORDER BY data->>'name' DESC
+# => SELECT data FROM objects WHERE (data#>>'{age}')::integer >= 21 ORDER BY data#>>'{name}' DESC
+
+builder.find({ "address.city": {"$in" => ["San Francisco", "Tokyo"] } })
+# => SELECT data FROM objects WHERE data#>>'{address,city}' IN ("San Francisco", "Tokyo")
 
 builder.insert({ _id: 'foobar' }).to_sql
 # => INSERT INTO "objects" ("id", "data") VALUES ('foobar', '{"_id":"foobar"}')
 
 builder.find({ age: {"$gte" => 21 } }).update({ name: "John" }).to_sql
-# => UPDATE "objects" SET "data" = '{"name":"John"}' WHERE (data->>'age')::integer >= 21
+# => UPDATE "objects" SET "data" = '{"name":"John"}' WHERE (data#>>'{age}')::integer >= 21
 
 builder.find({ age: {"$eq" => 55 } }).delete.to_sql
-# => DELETE FROM "objects" WHERE (data->>'age')::integer = 21
+# => DELETE FROM "objects" WHERE (data#>>'{age}')::integer = 21
 ```
 
 ## See Also
