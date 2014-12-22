@@ -1,3 +1,6 @@
+## 1.0.1 (2014/12/22)
+- Force string comparison on non-typed property
+
 ## 1.0.0 (2014/12/9)
 - This is a MAJOR update and is incompatible to the previous version
 - All JSON fields are now represented with JSON path (`data#>>{path}`)
