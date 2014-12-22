@@ -16,7 +16,13 @@ describe Mongery::Builder do
     [ { tag: {"$in" => [ "food", "recipe" ]} },
       /WHERE \(data#>>'{tag}' ILIKE '%"food"%' OR data#>>'{tag}' ILIKE '%"recipe"%'\)$/ ],
     [ { active: true },
-      /WHERE data#>>'{active}' = 'true'$/ ],
+      /WHERE \(data#>>'{active}'\) = 'true'$/ ],
+    [ { height: 2.1 },
+      /WHERE \(data#>>'{height}'\) = '2\.1'$/ ],
+    [ { height: { '$in' => ['6.1', '6.2'] } },
+      /WHERE \(data#>>'{height}'\) IN \('6\.1', '6\.2'\)$/ ],
+    [ { height: nil },
+      /WHERE \(data#>>'{height}'\) IS NULL$/ ],
   ]
 
   schema = JsonSchema.parse!(JSON.parse(<<-EOF))

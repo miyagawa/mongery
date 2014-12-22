@@ -263,17 +263,18 @@ module Mongery
     end
 
     def compare_schema(col, val, type, op)
-      wrap_schema(col, type).send(op, val)
-    end
-
-    def wrap_schema(col, type)
       case type
       when "string"
-        Arel.sql("(#{col})")
+        Arel.sql("(#{col})").send(op, val)
       when "number", "integer"
-        Arel.sql("(#{col})::numeric")
+        Arel.sql("(#{col})::numeric").send(op, val)
       else
-        col
+        case val
+        when Numeric
+          Arel.sql("(#{col})").send(op, val.to_s)
+        else
+          Arel.sql("(#{col})").send(op, val)
+        end
       end
     end
 
