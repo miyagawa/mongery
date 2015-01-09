@@ -5,28 +5,31 @@ require "arel"
 module Mongery
   class Builder
     attr_reader :model, :table, :schema
+    attr_accessor :mapped_properties
 
     def initialize(model, engine = ActiveRecord::Base, schema = nil)
       @model = model
       @table = Arel::Table.new(model, engine)
       @schema = Schema.new(schema) if schema
+      @mapped_properties = {}
     end
 
     def find(*args)
-      Query.new(table, schema).where(*args)
+      Query.new(table, schema, mapped_properties).where(*args)
     end
 
     def insert(*args)
-      Query.new(table, schema).insert(*args)
+      Query.new(table, schema, mapped_properties).insert(*args)
     end
   end
 
   class Query
-    attr_reader :table, :schema
+    attr_reader :table, :schema, :mapped_properties
 
-    def initialize(table, schema)
+    def initialize(table, schema, mapped_properties)
       @table = table
       @schema = schema
+      @mapped_properties = mapped_properties
       @condition = nil
     end
 
@@ -70,17 +73,26 @@ module Mongery
       self
     end
 
+    def mapped_values(args)
+      pairs = []
+      mapped_properties.each do |key, column|
+        pairs.push([table[column], args[key]]) if args.key?(key)
+      end
+      pairs
+    end
+    private :mapped_values
+
     def insert(args)
       Arel::InsertManager.new(table.engine).tap do |manager|
         manager.into(table)
-        manager.insert([[table[:id], args[:_id]], [table[:data], args.to_json]])
+        manager.insert([[table[:id], args[:_id]], [table[:data], args.to_json], *mapped_values(args)])
       end
     end
 
     def update(args)
       Arel::UpdateManager.new(table.engine).tap do |manager|
         manager.table(table)
-        manager.set([[table[:data], args.to_json]])
+        manager.set([[table[:data], args.to_json], *mapped_values(args)])
         manager.where(condition) if condition
       end
     end
@@ -93,6 +105,10 @@ module Mongery
     end
 
     private
+
+    def mapped_keys
+      mapped_properties.keys.map(&:to_s)
+    end
 
     def condition
       @condition ||= translate(@where)
@@ -118,6 +134,8 @@ module Mongery
         raise UnsupportedQuery, "Unsupported operator #{col}"
       when "_id"
         translate_value(table[:id], value)
+      when *mapped_keys
+        translate_value(table[mapped_properties[col.to_sym]], value)
       else
         if schema
           translate_value_schema(col, sql_json_path(col), value)

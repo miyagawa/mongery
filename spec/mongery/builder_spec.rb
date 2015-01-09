@@ -103,3 +103,4 @@ describe Mongery::Builder do
     end
   end
 end
+
