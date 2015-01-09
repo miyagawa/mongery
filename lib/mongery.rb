@@ -16,7 +16,7 @@ module Mongery
     def mapped_properties=(value)
       case value
       when Array
-        @mapped_properties = Hash[ value.map { |v| [v, v] } ]
+        @mapped_properties = Hash[ value.map { |v| [v.to_s, v] } ]
       else
         @mapped_properties = value
       end
@@ -115,7 +115,7 @@ module Mongery
     private
 
     def mapped_keys
-      mapped_properties.keys.map(&:to_s)
+      mapped_properties.keys
     end
 
     def condition
@@ -143,7 +143,7 @@ module Mongery
       when "_id"
         translate_value(table[:id], value)
       when *mapped_keys
-        translate_value(table[mapped_properties[col.to_sym]], value)
+        translate_value(table[mapped_properties[col.to_s]], value)
       else
         if schema
           translate_value_schema(col, sql_json_path(col), value)

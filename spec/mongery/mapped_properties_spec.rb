@@ -1,3 +1,5 @@
+require 'active_support/core_ext/hash/indifferent_access'
+
 describe "#mapped_properties" do
   let(:builder) {
     Mongery::Builder.new(:test).tap do |builder|
@@ -6,7 +8,7 @@ describe "#mapped_properties" do
   }
 
   let(:args) {
-    { _id: 1, user_id: 2, created_at: Time.now, foo: "bar" }
+    { '_id' => 1, 'user_id' => 2, 'created_at' => Time.now, 'foo' => "bar" }.with_indifferent_access
   }
 
   it 'generates INSERT' do
