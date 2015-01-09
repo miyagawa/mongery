@@ -1,3 +1,7 @@
+## 1.0.2 (2015/01/09)
+- Support mapped_properties to map system columns on Postgres
+- Look up all values using string keys rather than symbol. Make sure you use indifferent_access, or stringify_key before passing the value hash to Mongery
+
 ## 1.0.1 (2014/12/22)
 - Force string comparison on non-typed property
 
