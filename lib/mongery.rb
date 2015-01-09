@@ -29,6 +29,10 @@ module Mongery
     def insert(*args)
       Query.new(table, schema, mapped_properties).insert(*args)
     end
+
+    def index(*args)
+      Query.new(table, schema, mapped_properties).index(*args)
+    end
   end
 
   class Query
@@ -79,6 +83,18 @@ module Mongery
         end
       end
       self
+    end
+
+    def sql_json_exp(col)
+      if schema && numeric?(col)
+        sql_json_path(col) + "::numeric"
+      else
+        sql_json_path(col)
+      end
+    end
+
+    def index(col)
+      Arel.sql(%Q[CREATE INDEX "#{table.name}_#{col}_idx" ON "#{table.name}" ((#{sql_json_exp(col)}))])
     end
 
     def mapped_values(args)
@@ -286,6 +302,11 @@ module Mongery
       else
         col
       end
+    end
+
+    def numeric?(col)
+      type = schema.column_type(col.to_s)
+      ["number", "integer"].include?(type)
     end
 
     def compare_schema(col, val, type, op)
