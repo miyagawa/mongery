@@ -4,14 +4,22 @@ require "arel"
 
 module Mongery
   class Builder
-    attr_reader :model, :table, :schema
-    attr_accessor :mapped_properties
+    attr_reader :model, :table, :schema, :mapped_properties
 
     def initialize(model, engine = ActiveRecord::Base, schema = nil)
       @model = model
       @table = Arel::Table.new(model, engine)
       @schema = Schema.new(schema) if schema
       @mapped_properties = {}
+    end
+
+    def mapped_properties=(value)
+      case value
+      when Array
+        @mapped_properties = Hash[ value.map { |v| [v, v] } ]
+      else
+        @mapped_properties = value
+      end
     end
 
     def find(*args)
