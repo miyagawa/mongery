@@ -1,3 +1,6 @@
+## 1.0.3 (2015/01/09)
+- Support index method to create expression indexes
+
 ## 1.0.2 (2015/01/09)
 - Support mapped_properties to map system columns on Postgres
 - Look up all values using string keys rather than symbol. Make sure you use indifferent_access, or stringify_key before passing the value hash to Mongery
