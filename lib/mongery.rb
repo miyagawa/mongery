@@ -93,7 +93,7 @@ module Mongery
     def insert(args)
       Arel::InsertManager.new(table.engine).tap do |manager|
         manager.into(table)
-        manager.insert([[table[:id], args[:_id]], [table[:data], args.to_json], *mapped_values(args)])
+        manager.insert([[table[:id], args['_id']], [table[:data], args.to_json], *mapped_values(args)])
       end
     end
 
