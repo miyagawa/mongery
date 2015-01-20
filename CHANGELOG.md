@@ -1,3 +1,6 @@
+## 1.0.4 (2015/01/19)
+- Support custom operators
+
 ## 1.0.3 (2015/01/09)
 - Support index method to create expression indexes
 
