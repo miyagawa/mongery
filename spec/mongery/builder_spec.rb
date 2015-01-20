@@ -70,6 +70,10 @@ describe Mongery::Builder do
       /WHERE data#>>'{bar}' = '{"foo":"bar","baz":\[1,2,3\]}'$/ ],
     [ { "foo.bar" => true }, { },
       /WHERE data#>>'{foo,bar}' = 'true'$/ ],
+    [ { bar: {"$as" => 1} }, { },
+      /WHERE \(data#>>'{bar}'\)::numeric = 1$/ ],
+    [ { bar: {"$land" => 'foo'} }, { },
+      /WHERE data#>>'{bar}' && 'foo'$/ ],
   ]
 
   bad_queries = [
@@ -80,6 +84,12 @@ describe Mongery::Builder do
   ]
 
   builder = Mongery::Builder.new(:test)
+  builder.custom_operators  = {
+    "$as" => :eq,
+    "$land" => ->(col, val) {
+      Arel::Nodes::InfixOperation.new("&&", col, val)
+    }
+  }
 
   queries.each do |query, condition, sql|
     context "with query #{query}" do

@@ -5,12 +5,14 @@ require "arel"
 module Mongery
   class Builder
     attr_reader :model, :table, :schema, :mapped_properties
+    attr_accessor :custom_operators
 
     def initialize(model, engine = ActiveRecord::Base, schema = nil)
       @model = model
       @table = Arel::Table.new(model, engine)
       @schema = Schema.new(schema) if schema
       @mapped_properties = {}
+      @custom_operators = {}
     end
 
     def mapped_properties=(value)
@@ -23,25 +25,32 @@ module Mongery
     end
 
     def find(*args)
-      Query.new(table, schema, mapped_properties).where(*args)
+      build_query.where(*args)
     end
 
     def insert(*args)
-      Query.new(table, schema, mapped_properties).insert(*args)
+      build_query.insert(*args)
     end
 
     def index(*args)
-      Query.new(table, schema, mapped_properties).index(*args)
+      build_query.index(*args)
+    end
+
+    private
+
+    def build_query
+      Query.new(table, schema, mapped_properties, custom_operators)
     end
   end
 
   class Query
-    attr_reader :table, :schema, :mapped_properties
+    attr_reader :table, :schema, :mapped_properties, :custom_operators
 
-    def initialize(table, schema, mapped_properties)
+    def initialize(table, schema, mapped_properties, custom_operators)
       @table = table
       @schema = schema
       @mapped_properties = mapped_properties
+      @custom_operators = custom_operators
       @condition = nil
     end
 
@@ -179,7 +188,9 @@ module Mongery
       when Hash
         if has_operator?(value)
           chain(:and, value.map {|op, val|
-                  if OPERATOR_MAP.key?(op)
+                  if custom_operators[op]
+                    operator(col, custom_operators[op], val)
+                  elsif OPERATOR_MAP.key?(op)
                     col.send(OPERATOR_MAP[op], val)
                   else
                     raise UnsupportedQuery, "Unknown operator #{op}"
@@ -190,36 +201,6 @@ module Mongery
         end
       else
         col.eq(value)
-      end
-    end
-
-    def translate_value_dynamic(col, value)
-      case value
-      when String, TrueClass, FalseClass
-        compare(col, value.to_s, :eq)
-      when Numeric, NilClass
-        compare(col, value, :eq)
-      when Hash
-        if has_operator?(value)
-          chain(:and, value.map {|op, val|
-                  case op
-                  when "$in"
-                    if val.all? {|v| v.is_a? Numeric }
-                      wrap(col, val.first).in(val)
-                    else
-                      col.in(val.map(&:to_s))
-                    end
-                  when "$eq", "$ne", "$gt", "$gte", "$lt", "$lte"
-                    compare(col, val, OPERATOR_MAP[op])
-                  else
-                    raise UnsupportedQuery, "Unknown operator #{op}"
-                  end
-                })
-        else
-          col.eq(value.to_json)
-        end
-      else
-        col.eq(value.to_json)
       end
     end
 
@@ -237,8 +218,10 @@ module Mongery
                     else
                       compare_schema(col, val, type, :in)
                     end
+                  when *(custom_operators.keys)
+                    compare_schema(col, val, type, custom_operators[op])
                   when "$eq", "$ne", "$gt", "$gte", "$lt", "$lte"
-                     compare_schema(col, val, type, OPERATOR_MAP[op])
+                    compare_schema(col, val, type, OPERATOR_MAP[op])
                   else
                     raise UnsupportedQuery, "Unknown operator #{op}"
                   end
@@ -269,6 +252,8 @@ module Mongery
                     else
                       col.in(val.map(&:to_s))
                     end
+                  when *(custom_operators.keys)
+                    compare(col, val, custom_operators[op])
                   when "$eq", "$ne", "$gt", "$gte", "$lt", "$lte"
                     compare(col, val, OPERATOR_MAP[op])
                   else
@@ -288,7 +273,7 @@ module Mongery
     end
 
     def compare(col, val, op)
-      wrap(col, val).send(op, val)
+      operator(wrap(col, val), op, val)
     end
 
     def wrap(col, val)
@@ -312,16 +297,25 @@ module Mongery
     def compare_schema(col, val, type, op)
       case type
       when "string"
-        Arel.sql("(#{col})").send(op, val)
+        operator(Arel.sql("(#{col})"), op, val)
       when "number", "integer"
-        Arel.sql("(#{col})::numeric").send(op, val)
+        operator(Arel.sql("(#{col})::numeric"), op, val)
       else
         case val
         when Numeric
-          Arel.sql("(#{col})").send(op, val.to_s)
+          operator(Arel.sql("(#{col})"), op, val.to_s)
         else
-          Arel.sql("(#{col})").send(op, val)
+          operator(Arel.sql("(#{col})"), op, val)
         end
+      end
+    end
+
+    def operator(col, op, val)
+      case op
+      when Symbol
+        col.send(op, val)
+      else
+        op.call(col, val)
       end
     end
 

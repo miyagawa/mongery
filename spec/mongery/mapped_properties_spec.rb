@@ -4,6 +4,12 @@ describe "#mapped_properties" do
   let(:builder) {
     Mongery::Builder.new(:test).tap do |builder|
       builder.mapped_properties = [:user_id, :created_at, :updated_at]
+      builder.custom_operators  = {
+        "$as" => :eq,
+        "$land" => ->(col, val) {
+          Arel::Nodes::InfixOperation.new("&&", col, val)
+        }
+      }
     end
   }
 
@@ -30,5 +36,15 @@ describe "#mapped_properties" do
   it 'searches WHERE with operators' do
     expect(builder.find("created_at" => {'$in' => ['2014-01-01', '2015-01-01']}, "foo" => "bar").to_sql)
       .to match /WHERE "test"\."created_at" IN \('2014-01-01', '2015-01-01'\) AND data#>>'{foo}' = 'bar'/;
+  end
+
+  it 'does custom operators' do
+    expect(builder.find(user_id: { "$as" => 2 }).to_sql)
+      .to match /WHERE "test"\."user_id" = 2/;
+  end
+
+  it 'does custom operators with proc' do
+    expect(builder.find(user_id: { "$land" => 'foo' }).to_sql)
+      .to match /WHERE "test"\."user_id" && 'foo'/;
   end
 end

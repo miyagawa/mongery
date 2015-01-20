@@ -23,6 +23,10 @@ describe Mongery::Builder do
       /WHERE \(data#>>'{height}'\) IN \('6\.1', '6\.2'\)$/ ],
     [ { height: nil },
       /WHERE \(data#>>'{height}'\) IS NULL$/ ],
+    [ { name: { "$as" => "miyagawa" } },
+      /WHERE \(data#>>'{name}'\) = 'miyagawa'$/ ],
+    [ { name: { "$land" => "foo" } },
+      /WHERE \(data#>>'{name}'\) && 'foo'$/ ],
   ]
 
   schema = JsonSchema.parse!(JSON.parse(<<-EOF))
@@ -49,6 +53,12 @@ describe Mongery::Builder do
   EOF
 
   builder = Mongery::Builder.new(:test, ActiveRecord::Base, schema)
+  builder.custom_operators  = {
+    "$as" => :eq,
+    "$land" => ->(col, val) {
+      Arel::Nodes::InfixOperation.new("&&", col, val)
+    }
+  }
 
   queries.each do |query, sql|
     context "with query #{query}" do
