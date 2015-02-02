@@ -38,6 +38,14 @@ describe "#mapped_properties" do
       .to match /WHERE "test"\."created_at" IN \('2014-01-01', '2015-01-01'\) AND data#>>'{foo}' = 'bar'/;
   end
 
+  it 'selects WHERE with custom fields' do
+    expect(builder.find(user_id: '2').select(builder.table['user_id']).to_sql).to match /SELECT "test"\."user_id".*WHERE "test"."user_id" = '2'/
+  end
+
+  it 'counts WHERE' do
+    expect(builder.find(user_id: '2').select(Arel.sql('*').count).to_sql).to match /SELECT COUNT\(\*\).*WHERE "test"."user_id" = '2'/
+  end
+
   it 'does custom operators' do
     expect(builder.find(user_id: { "$as" => 2 }).to_sql)
       .to match /WHERE "test"\."user_id" = 2/;
