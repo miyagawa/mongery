@@ -115,6 +115,18 @@ module Mongery
     end
     private :mapped_values
 
+
+    # Generic interface to SELECT statements.
+    # @example
+    #   query.select(Arel.sql('*').count) # makes SELECT COUNT(*)
+    #   query.select(query['user_id']) # makes SELECT #{table_name}.user_id
+    # @see Arel::Table#project(*things)
+    def select(*things)
+      table.project(*things).tap do |t|
+        t.where(condition) if condition
+      end
+    end
+
     def insert(args)
       Arel::InsertManager.new(table.engine).tap do |manager|
         manager.into(table)
