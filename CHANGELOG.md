@@ -1,3 +1,6 @@
+## 1.0.5 (2015/02/02)
+- Added #count (gfx)
+
 ## 1.0.4 (2015/01/19)
 - Support custom operators
 
