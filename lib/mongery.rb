@@ -28,6 +28,10 @@ module Mongery
       build_query.where(*args)
     end
 
+    def count
+      build_query.where(*args).count
+    end
+
     def insert(*args)
       build_query.insert(*args)
     end
@@ -114,6 +118,13 @@ module Mongery
       pairs
     end
     private :mapped_values
+
+
+    def count
+      table.project('COUNT(*)').tap do |t|
+        t.where(condition) if condition
+      end
+    end
 
     def insert(args)
       Arel::InsertManager.new(table.engine).tap do |manager|
