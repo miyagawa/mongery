@@ -28,7 +28,7 @@ module Mongery
       build_query.where(*args)
     end
 
-    def count
+    def count(*args)
       build_query.where(*args).count
     end
 

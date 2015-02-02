@@ -39,7 +39,7 @@ describe "#mapped_properties" do
   end
 
   it 'counts WHERE' do
-    expect(builder.find(user_id: '2').count.to_sql).to match /SELECT COUNT\(\*\).*WHERE "test"."user_id" = '2'/
+    expect(builder.count(user_id: '2').to_sql).to match /SELECT COUNT\(\*\).*WHERE "test"."user_id" = '2'/
   end
 
   it 'does custom operators' do
